@@ -21,6 +21,10 @@
       <HintPath>$(BepInExCore)\0Harmony.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="netstandard">
+      <HintPath>$(ValheimManaged)\netstandard.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
 
     <!-- Valheim game code (publicized so internal/private members are accessible) -->
     <Reference Include="assembly_valheim">
@@ -71,6 +75,10 @@
     </Reference>
     <Reference Include="UnityEngine.TextRenderingModule">
       <HintPath>$(ValheimManaged)\UnityEngine.TextRenderingModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="Unity.TextMeshPro">
+      <HintPath>$(ValheimManaged)\Unity.TextMeshPro.dll</HintPath>
       <Private>false</Private>
     </Reference>
     <Reference Include="UnityEngine.InputLegacyModule">

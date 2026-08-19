@@ -100,6 +100,7 @@ namespace Velas.Ships
         /// visible result comes back through RPC_SailChanged (or nothing, if denied).</summary>
         public void RequestSetSail(string sailId)
         {
+            if (!SailConfig.Enabled.Value) return;
             if (_nview == null || !_nview.IsValid() || string.IsNullOrEmpty(sailId)) return;
             SailLog.Debug($"Synchronizing sail: requesting '{sailId}' for ship {_ship?.name}");
             _nview.InvokeRPC("RPC_DHS_RequestSetSail", sailId);
@@ -107,6 +108,7 @@ namespace Velas.Ships
 
         private void RPC_RequestSetSail(long sender, string sailId)
         {
+            if (!SailConfig.Enabled.Value) return;
             if (_nview == null || !_nview.IsOwner()) return;
 
             var def = SailManager.Get(sailId);

@@ -13,8 +13,15 @@ do Steam. O build já copia a DLL e os assets para
 
 ## Configuração
 
+O Velas 0.2.0 incorpora o [ServerSync da Blaxxun](https://github.com/blaxxun-boop/ServerSync).
+Ao entrar em um servidor, as configurações abaixo são substituídas pelos valores do
+servidor. Com `ServerSync.LockConfiguration=true` (padrão), jogadores não podem alterar
+esses valores localmente. Apenas `OpenSailSelectorKey` e `DebugMode` continuam sendo
+preferências locais.
+
 | chave | padrão | descrição |
 |---|---|---|
+| `LockConfiguration` | `true` | bloqueia no cliente as opções controladas pelo servidor |
 | `Enabled` | `true` | liga/desliga o mod inteiro |
 | `OpenSailSelectorKey` | `G` | tecla que abre o seletor de velas |
 | `MaxInteractionDistance` | `10` | distância máxima (m) até o navio para o seletor abrir |
