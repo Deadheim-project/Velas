@@ -73,6 +73,10 @@
       <HintPath>$(ValheimManaged)\UnityEngine.IMGUIModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.JSONSerializeModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.JSONSerializeModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="UnityEngine.TextRenderingModule">
       <HintPath>$(ValheimManaged)\UnityEngine.TextRenderingModule.dll</HintPath>
       <Private>false</Private>
@@ -86,9 +90,6 @@
       <Private>false</Private>
     </Reference>
 
-    <!-- .NET Framework's built-in JSON serializer, used for the sail manifest. Avoids
-         pulling in a new NuGet dependency just to parse a small, flat document. -->
-    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Net.Http" />
   </ItemGroup>
 
