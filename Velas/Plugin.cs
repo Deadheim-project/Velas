@@ -56,6 +56,15 @@ namespace Velas
 
             SailDebugTools.RegisterAll();
 
+            foreach (string argument in System.Environment.GetCommandLineArgs())
+                if (string.Equals(argument, "-velas-visual-test", System.StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(argument, "-velas-cleanup-test", System.StringComparison.OrdinalIgnoreCase))
+                {
+                    SailVisualTestRunner.EnsureCreated(
+                        string.Equals(argument, "-velas-cleanup-test", System.StringComparison.OrdinalIgnoreCase));
+                    break;
+                }
+
             Log.LogInfo($"[Sails] {Name} {Version} loaded.");
         }
 
