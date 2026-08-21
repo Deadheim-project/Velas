@@ -1,5 +1,7 @@
 using System.Collections;
+using System.IO;
 using System.Reflection;
+using BepInEx;
 using UnityEngine;
 using Velas.Manager;
 using Velas.Ships;
@@ -122,11 +124,11 @@ namespace Velas.Debug
 
             yield return ApplyAndCheck(ship, component, ravenId);
             SailLog.Info($"VISUALTEST STAGE: {ravenId} ready for screenshot");
-            yield return new WaitForSeconds(30f);
+            yield return new WaitForSeconds(5f);
 
             yield return ApplyAndCheck(ship, component, nordicId);
             SailLog.Info($"VISUALTEST STAGE: {nordicId} ready for screenshot");
-            yield return new WaitForSeconds(30f);
+            yield return new WaitForSeconds(5f);
 
             var ui = FindAnyObjectByType<SailSelectorUI>();
             if (ui == null)
@@ -137,7 +139,11 @@ namespace Velas.Debug
 
             ui.Open(ship, component);
             SailLog.Info("VISUALTEST PASS: selector opened; visual test complete");
-            yield return new WaitForSeconds(30f);
+            yield return new WaitForEndOfFrame();
+            string screenshot = Path.Combine(Paths.GameRootPath, "velas-selector-test.png");
+            ScreenCapture.CaptureScreenshot(screenshot);
+            SailLog.Info($"VISUALTEST: selector screenshot requested at '{screenshot}'");
+            yield return new WaitForSeconds(5f);
             ui.Close();
             var testView = ship.GetComponent<ZNetView>();
             if (testView != null && testView.IsValid())

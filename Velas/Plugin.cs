@@ -16,7 +16,7 @@ namespace Velas
     {
         public const string Guid = "com.deadheim.velas";
         public const string Name = "Velas";
-        public const string Version = "0.2.2";
+        public const string Version = "0.3.0";
 
         internal static ManualLogSource Log;
 

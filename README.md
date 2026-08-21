@@ -13,8 +13,11 @@ do Steam. O build já copia a DLL e os assets para
 
 ## Configuração
 
-O Velas 0.2.2 incorpora o [ServerSync da Blaxxun](https://github.com/blaxxun-boop/ServerSync)
-e corrige o carregamento do catálogo remoto no runtime do Valheim.
+O Velas 0.3.0 usa a interface nativa do Valheim no mesmo padrão visual do NpcValheim:
+moldura de madeira, fontes do jogo, caixas rebaixadas, botões com sons e uma grade com
+prévias das velas. Também incorpora o
+[ServerSync da Blaxxun](https://github.com/blaxxun-boop/ServerSync) e carrega o catálogo
+remoto no runtime do Valheim.
 Ao entrar em um servidor, as configurações abaixo são substituídas pelos valores do
 servidor. Com `ServerSync.LockConfiguration=true` (padrão), jogadores não podem alterar
 esses valores localmente. Apenas `OpenSailSelectorKey` e `DebugMode` continuam sendo
@@ -62,7 +65,7 @@ SailPermissionService -- decide se um jogador pode usar uma vela
 ClanProvider / IClanProvider / GuildsClanProvider -- abstração Player -> Clan -> permissão
 ShipSailController  -- Ship -> Sail Renderer -> Sail Texture
 ShipSailComponent   -- estado por navio (ZDO), RPCs, vela automática do clã
-SailSelectorUI / SailInputController -- interface (IMGUI) e o bind que a abre
+SailSelectorUI / SailValheimUi / SailInputController -- interface uGUI nativa e o bind que a abre
 SailConfig          -- toda a configuração do mod
 SailDebugTools       -- comandos de desenvolvimento (isolados)
 ```
