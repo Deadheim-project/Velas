@@ -41,6 +41,19 @@ namespace Velas.Debug
 
             yield return new WaitForSeconds(2f);
 
+            float repositoryDeadline = Time.realtimeSinceStartup + 30f;
+            while (SailManager.RemoteState == RemoteSailsState.Loading &&
+                   Time.realtimeSinceStartup < repositoryDeadline)
+                yield return null;
+
+            int remoteCount = 0;
+            foreach (var sail in SailManager.AllSails)
+                if (sail.Source == Model.SailSource.Remote) remoteCount++;
+            if (SailManager.RemoteState == RemoteSailsState.Loaded && remoteCount > 0)
+                SailLog.Info($"VISUALTEST PASS: remote catalog loaded with {remoteCount} sail(s)");
+            else
+                SailLog.Warn($"VISUALTEST: remote catalog state={SailManager.RemoteState} count={remoteCount}; testing bundled sails");
+
             if (_cleanupOnly)
             {
                 CleanupPreviousDisplayShip(player.transform.position);
@@ -102,12 +115,17 @@ namespace Velas.Debug
             }
 
             SailLog.Info($"VISUALTEST PASS: spawned '{prefab.name}' with ShipSailComponent");
-            yield return ApplyAndCheck(ship, component, "generic_raven_banner");
-            SailLog.Info("VISUALTEST STAGE: raven_banner ready for screenshot");
+            string ravenId = SailManager.Get("remote_raven_banner") != null
+                ? "remote_raven_banner" : "generic_raven_banner";
+            string nordicId = SailManager.Get("remote_nordic_pattern") != null
+                ? "remote_nordic_pattern" : "generic_nordic_pattern";
+
+            yield return ApplyAndCheck(ship, component, ravenId);
+            SailLog.Info($"VISUALTEST STAGE: {ravenId} ready for screenshot");
             yield return new WaitForSeconds(30f);
 
-            yield return ApplyAndCheck(ship, component, "generic_nordic_pattern");
-            SailLog.Info("VISUALTEST STAGE: nordic_pattern ready for screenshot");
+            yield return ApplyAndCheck(ship, component, nordicId);
+            SailLog.Info($"VISUALTEST STAGE: {nordicId} ready for screenshot");
             yield return new WaitForSeconds(30f);
 
             var ui = FindAnyObjectByType<SailSelectorUI>();

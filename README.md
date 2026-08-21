@@ -13,7 +13,8 @@ do Steam. O build já copia a DLL e os assets para
 
 ## Configuração
 
-O Velas 0.2.1 incorpora o [ServerSync da Blaxxun](https://github.com/blaxxun-boop/ServerSync).
+O Velas 0.2.2 incorpora o [ServerSync da Blaxxun](https://github.com/blaxxun-boop/ServerSync)
+e corrige o carregamento do catálogo remoto no runtime do Valheim.
 Ao entrar em um servidor, as configurações abaixo são substituídas pelos valores do
 servidor. Com `ServerSync.LockConfiguration=true` (padrão), jogadores não podem alterar
 esses valores localmente. Apenas `OpenSailSelectorKey` e `DebugMode` continuam sendo

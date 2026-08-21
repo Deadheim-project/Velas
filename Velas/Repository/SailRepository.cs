@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using System.Net.Http;
+using System.Runtime.Serialization.Json;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Velas.Cache;
@@ -100,7 +103,7 @@ namespace Velas.Repository
                 if (doc == null) throw new Exception("manifest.json could not be parsed");
 
                 if (SailConfig.EnableSailCache.Value) SailCache.WriteManifestText(json);
-                SailLog.Debug($"Repository manifest loaded: {doc.sails.Count} sail(s)");
+                SailLog.Debug($"Repository manifest loaded: {doc.sails.Length} sail(s)");
                 return doc;
             }
             catch (Exception e)
@@ -123,13 +126,16 @@ namespace Velas.Repository
         {
             try
             {
-                var doc = UnityEngine.JsonUtility.FromJson<SailManifestDocument>(json);
+                var serializer = new DataContractJsonSerializer(typeof(SailManifestDocument));
+                SailManifestDocument doc;
+                using (var stream = new MemoryStream(Encoding.UTF8.GetBytes(json)))
+                    doc = serializer.ReadObject(stream) as SailManifestDocument;
                 if (doc?.sails == null) return null;
                 // Drop entries with no id/file rather than failing the whole manifest --
                 // one bad entry from a manually-edited repo should not take every sail down.
                 doc.sails = doc.sails
                     .Where(e => e != null && !string.IsNullOrWhiteSpace(e.id) && !string.IsNullOrWhiteSpace(e.file))
-                    .ToList();
+                    .ToArray();
                 return doc;
             }
             catch (Exception e)
