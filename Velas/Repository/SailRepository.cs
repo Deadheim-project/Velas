@@ -1,10 +1,10 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using System.Web.Script.Serialization;
+using Newtonsoft.Json;
 using Velas.Cache;
 using Velas.Model;
 
@@ -26,7 +26,6 @@ namespace Velas.Repository
     internal static class SailRepository
     {
         private static readonly HttpClient Http = CreateClient();
-        private static readonly JavaScriptSerializer Json = new JavaScriptSerializer();
 
         // Only relative, forward-slash paths without ".." segments are accepted from the
         // manifest's "file" field -- this is what stops a malicious manifest from pointing
@@ -126,7 +125,7 @@ namespace Velas.Repository
         {
             try
             {
-                var doc = Json.Deserialize<SailManifestDocument>(json);
+                var doc = JsonConvert.DeserializeObject<SailManifestDocument>(json);
                 if (doc?.sails == null) return null;
                 // Drop entries with no id/file rather than failing the whole manifest --
                 // one bad entry from a manually-edited repo should not take every sail down.

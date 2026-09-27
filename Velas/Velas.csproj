@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net48</TargetFramework>
@@ -78,9 +78,15 @@
       <Private>false</Private>
     </Reference>
 
-    <!-- .NET Framework's built-in JSON serializer, used for the sail manifest. Avoids
-         pulling in a new NuGet dependency just to parse a small, flat document. -->
-    <Reference Include="System.Web.Extensions" />
+    <!-- JSON for the sail manifest. This is the game's own Newtonsoft, not a NuGet
+         package: it already sits in valheim_Data/Managed, so nothing extra ships.
+         System.Web.Extensions (JavaScriptSerializer) used to be here and cannot be:
+         that assembly does not exist in Valheim's Mono, so the static field holding the
+         serializer threw TypeLoadException and killed Velas.Plugin.Awake. -->
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>$(ValheimManaged)\Newtonsoft.Json.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="System.Net.Http" />
   </ItemGroup>
 
