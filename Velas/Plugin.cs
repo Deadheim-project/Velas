@@ -44,6 +44,10 @@ namespace Velas
             SailConfig.SailsRepositoryUrl.SettingChanged += OnRepositorySettingChanged;
             SailConfig.EnableRemoteSails.SettingChanged += OnRepositorySettingChanged;
 
+            // Saving the cfg with the server running reloads it. Every other setting is read
+            // where it is used; the three above re-fetch the manifest through the handler.
+            Deadheim.Shared.ConfigWatcher.Watch(Config, Name);
+
             var pluginDir = Path.GetDirectoryName(Info.Location) ?? Paths.PluginPath;
             EnsureSailManagerInitialized(pluginDir);
 
