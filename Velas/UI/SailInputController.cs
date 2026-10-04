@@ -3,9 +3,9 @@ using Velas.Ships;
 
 namespace Velas.UI
 {
-    /// <summary>Watches for SailConfig.OpenSailSelectorKey and opens the selector for the
-    /// nearest valid ship -- only does the (cheap, on-keypress-only) ship search when the key
-    /// is actually pressed, never every frame.</summary>
+    /// <summary>Watches for SailConfig.OpenSailSelectorKey and opens the selector for the ship
+    /// the player is looking at or steering -- the key does nothing anywhere else, and the
+    /// lookup only runs when the key is actually pressed, never every frame.</summary>
     internal class SailInputController : MonoBehaviour
     {
         private SailSelectorUI _ui;
@@ -31,13 +31,12 @@ namespace Velas.UI
                 return;
             }
 
+            // Only reacts while the player is actually interacting with a ship: looking at it
+            // (crosshair hover) or holding its rudder. Anywhere else the key stays silent, so
+            // it doesn't clash with whatever else the player has bound to it.
             var player = Player.m_localPlayer;
-            var ship = ShipFinder.FindNearest(player.transform.position, SailConfig.MaxInteractionDistance.Value);
-            if (ship == null)
-            {
-                player.Message(MessageHud.MessageType.Center, "Nenhum navio próximo o suficiente.");
-                return;
-            }
+            var ship = GetInteractedShip(player);
+            if (ship == null) return;
 
             var component = ship.GetComponent<ShipSailComponent>();
             if (component == null)
@@ -47,6 +46,21 @@ namespace Velas.UI
             }
 
             _ui.Open(ship, component);
+        }
+
+        private static Ship GetInteractedShip(Player player)
+        {
+            var controlled = player.GetControlledShip();
+            if (controlled != null) return controlled;
+
+            var hover = player.GetHoverObject();
+            if (hover == null) return null;
+
+            var ship = hover.GetComponentInParent<Ship>();
+            if (ship == null) return null;
+
+            float distance = Vector3.Distance(player.transform.position, ship.transform.position);
+            return distance <= SailConfig.MaxInteractionDistance.Value ? ship : null;
         }
     }
 }
