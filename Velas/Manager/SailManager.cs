@@ -48,6 +48,7 @@ namespace Velas.Manager
         {
             SailLog.Debug("Loading local sails");
             LoadGenericSails(pluginDirectory);
+            LoadServerIcon(pluginDirectory);
 
             if (SailConfig.EnableRemoteSails.Value)
                 RefreshRemoteSails();
@@ -105,6 +106,29 @@ namespace Velas.Manager
             catch (Exception e)
             {
                 SailLog.Error($"failed loading generic sails: {e.Message}");
+            }
+        }
+
+        /// <summary>Server icon stamped on vanilla sails of ships with no custom sail (see
+        /// SailBranding). Null when the asset is missing -- branding is then just skipped.</summary>
+        public static Texture2D ServerIcon { get; private set; }
+
+        private static void LoadServerIcon(string pluginDirectory)
+        {
+            try
+            {
+                var file = Path.Combine(pluginDirectory, "Assets", "ServerIcon", "server_icon.png");
+                if (!File.Exists(file))
+                {
+                    SailLog.Warn($"server icon missing: {file}");
+                    return;
+                }
+                if (SailTextureLoader.TryLoad(File.ReadAllBytes(file), "server_icon", out var tex))
+                    ServerIcon = tex;
+            }
+            catch (Exception e)
+            {
+                SailLog.Error($"failed loading server icon: {e.Message}");
             }
         }
 
@@ -178,7 +202,10 @@ namespace Velas.Manager
                 if (!SailTextureLoader.TryLoad(bytes, entry.id, out var tex)) return;
 
                 if (Textures.TryGetValue(entry.id, out var old) && old != null)
+                {
+                    SailUvFitter.Forget(old);
                     UnityEngine.Object.Destroy(old);
+                }
 
                 Sails[entry.id] = new SailDefinition
                 {

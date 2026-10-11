@@ -108,6 +108,7 @@
 
   <ItemGroup>
     <None Include="Assets\GenericSails\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="Assets\ServerIcon\**\*" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- Drop the built plugin straight into the game's plugin folder for quick in-game testing -->
@@ -119,6 +120,7 @@
       <GenericSailAssets Include="$(ProjectDir)Assets\GenericSails\*.*" />
     </ItemGroup>
     <Copy SourceFiles="@(GenericSailAssets)" DestinationFolder="$(BepInExPlugins)\Velas\Assets\GenericSails" />
+    <Copy SourceFiles="$(ProjectDir)Assets\ServerIcon\server_icon.png" DestinationFolder="$(BepInExPlugins)\Velas\Assets\ServerIcon" />
   </Target>
 
 </Project>

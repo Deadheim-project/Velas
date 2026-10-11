@@ -20,6 +20,10 @@ namespace Velas
         public static ConfigEntry<bool> DebugMode;
 
         public static ConfigEntry<float> MaxInteractionDistance;
+        public static ConfigEntry<float> MastInteractionRadius;
+        public static ConfigEntry<string> AdminOnlySails;
+        public static ConfigEntry<bool> ServerIconOnDefaultSails;
+        public static ConfigEntry<float> ServerIconSize;
         public static ConfigEntry<int> ManifestTimeoutSeconds;
         public static ConfigEntry<int> DownloadTimeoutSeconds;
         public static ConfigEntry<int> MaxImageSizeKb;
@@ -36,10 +40,13 @@ namespace Velas
                 "Master switch. When false the mod does not patch ships, open the UI, or contact the repository.");
 
             OpenSailSelectorKey = BindLocal(config, "General", "OpenSailSelectorKey", KeyCode.G,
-                "Key that opens the sail selector while near/interacting with a ship.");
+                "Key that opens the sail selector while aiming at a ship's mast.");
 
             MaxInteractionDistance = BindSynced(config, configSync, "General", "MaxInteractionDistance", 10f,
-                "Max distance (meters) from the player to a ship for the selector to open, so a distant ship can never be changed by accident.");
+                "Max distance (meters) from the player to the mast for the selector to open, so a distant ship can never be changed by accident.");
+
+            MastInteractionRadius = BindSynced(config, configSync, "General", "MastInteractionRadius", 0.8f,
+                "How far (meters) the crosshair may pass from the mast axis and still count as aiming at the mast.");
 
             SailsRepositoryUrl = BindSynced(config, configSync, "Repository", "SailsRepositoryUrl",
                 "https://github.com/Deadheim-project/repositorio-das-velas",
@@ -72,8 +79,29 @@ namespace Velas
             EnableAutomaticClanSail = BindSynced(config, configSync, "Clans", "EnableAutomaticClanSail", true,
                 "When a clan member builds a new ship, automatically apply that clan's default sail (if one is configured in the manifest).");
 
+            AdminOnlySails = BindSynced(config, configSync, "Permissions", "AdminOnlySails", "",
+                "Comma-separated sail ids (as listed by dhs_sails_status, e.g. generic_skull_banner, clan_deadheim_01) that only server admins (adminlist.txt) can apply. Other players see them locked.");
+
+            ServerIconOnDefaultSails = BindSynced(config, configSync, "Branding", "ServerIconOnDefaultSails", true,
+                "Stamp the server icon on the vanilla sail of ships that have no custom sail chosen.");
+
+            ServerIconSize = BindSynced(config, configSync, "Branding", "ServerIconSize", 0.55f,
+                "Height of the server icon as a fraction of the sail height (0.1 - 1).");
+
             DebugMode = BindLocal(config, "Debug", "DebugMode", false,
                 "Verbose [Sails] logging for repository fetches, cache hits, permission checks and sync. Also unlocks the dev commands in SailDebugTools.");
+        }
+
+        /// <summary>Whether <paramref name="sailId"/> is listed in AdminOnlySails. Parsed on
+        /// every call so a live cfg reload or a ServerSync update applies immediately.</summary>
+        public static bool IsAdminOnlySail(string sailId)
+        {
+            var list = AdminOnlySails?.Value;
+            if (string.IsNullOrWhiteSpace(list) || string.IsNullOrEmpty(sailId)) return false;
+            foreach (var entry in list.Split(',', ';'))
+                if (string.Equals(entry.Trim(), sailId, System.StringComparison.OrdinalIgnoreCase))
+                    return true;
+            return false;
         }
 
         private static ConfigEntry<T> BindSynced<T>(ConfigFile config, ConfigSync configSync,

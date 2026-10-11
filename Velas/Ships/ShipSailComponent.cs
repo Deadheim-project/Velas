@@ -25,6 +25,7 @@ namespace Velas.Ships
         private ZNetView _nview;
         private Ship _ship;
         private string _appliedSailId;
+        private Texture2D _appliedTexture;
 
         private void Awake()
         {
@@ -39,6 +40,19 @@ namespace Velas.Ships
                 InitializeIfFreshShip();
 
             ApplyPersistedSailLocally();
+        }
+
+        private void OnEnable() => SailManager.SailsChanged += OnSailsChanged;
+        private void OnDisable() => SailManager.SailsChanged -= OnSailsChanged;
+
+        /// <summary>A remote sail that is re-downloaded gets a new Texture2D and the old one is
+        /// destroyed (SailManager.LoadRemoteSailAsync); without re-applying, ships showing it
+        /// would turn blank until someone picked the sail again.</summary>
+        private void OnSailsChanged()
+        {
+            if (string.IsNullOrEmpty(_appliedSailId)) return;
+            if (_appliedTexture != null && SailManager.ResolveTexture(_appliedSailId) == _appliedTexture) return;
+            ApplyLocally(_appliedSailId);
         }
 
         /// <summary>Freshly-built ships have never had DHS_Init set. This is what
@@ -64,7 +78,8 @@ namespace Velas.Ships
             if (string.IsNullOrEmpty(clan)) return;
 
             var autoSail = SailManager.AllSails.FirstOrDefault(s =>
-                s.IsClanDefaultSail && string.Equals(s.ClanId, clan, StringComparison.OrdinalIgnoreCase));
+                s.IsClanDefaultSail && !SailConfig.IsAdminOnlySail(s.Id) &&
+                string.Equals(s.ClanId, clan, StringComparison.OrdinalIgnoreCase));
             if (autoSail == null) return;
 
             SailLog.Debug($"Player clan: {clan}");
@@ -83,7 +98,11 @@ namespace Velas.Ships
             var zdo = _nview?.GetZDO();
             if (zdo == null || !zdo.IsValid()) return;
             var sailId = zdo.GetString(SailZdoKeys.SailId, "");
-            if (string.IsNullOrEmpty(sailId)) return;
+            if (string.IsNullOrEmpty(sailId))
+            {
+                ApplyServerIcon();
+                return;
+            }
             ApplyLocally(sailId);
         }
 
@@ -93,7 +112,16 @@ namespace Velas.Ships
             var texture = SailManager.ResolveTexture(sailId);
             if (texture == null) return;
             if (ShipSailController.ApplyTexture(_ship, texture))
+            {
                 _appliedSailId = sailId;
+                _appliedTexture = texture;
+            }
+        }
+
+        private void ApplyServerIcon()
+        {
+            if (_ship == null || !SailConfig.ServerIconOnDefaultSails.Value) return;
+            ShipSailController.ApplyServerIcon(_ship, SailManager.ServerIcon, SailConfig.ServerIconSize.Value);
         }
 
         /// <summary>Client-side entry point used by the selector UI. Fire-and-forget: the

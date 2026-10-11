@@ -179,13 +179,15 @@ namespace Velas.Debug
 
             var expected = SailManager.ResolveTexture(sailId);
             var renderer = ShipSailController.FindSailRenderer(ship);
-            bool applied = component.CurrentSailId == sailId && renderer != null &&
-                           renderer.material.mainTexture == expected;
+            bool showing = ShipSailController.IsShowing(ship, expected);
+            bool applied = component.CurrentSailId == sailId && renderer != null && showing;
             if (applied)
                 SailLog.Info($"VISUALTEST PASS: '{sailId}' persisted and rendered through RPC");
             else
                 SailLog.Error($"VISUALTEST FAIL: '{sailId}' current='{component.CurrentSailId}' " +
-                              $"renderer={renderer != null} texture={(renderer != null && renderer.material.mainTexture == expected)}");
+                              $"renderer={renderer != null} texture={showing}");
+            foreach (var line in ShipSailController.Describe(ship))
+                SailLog.Info("VISUALTEST: " + line);
         }
 
         private static void ForceFullSail(Ship ship)

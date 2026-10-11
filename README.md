@@ -27,8 +27,12 @@ preferências locais.
 |---|---|---|
 | `LockConfiguration` | `true` | bloqueia no cliente as opções controladas pelo servidor |
 | `Enabled` | `true` | liga/desliga o mod inteiro |
-| `OpenSailSelectorKey` | `G` | tecla que abre o seletor de velas |
-| `MaxInteractionDistance` | `10` | distância máxima (m) até o navio para o seletor abrir |
+| `OpenSailSelectorKey` | `G` | tecla que abre o seletor de velas, mirando no mastro do navio |
+| `MaxInteractionDistance` | `10` | distância máxima (m) do jogador até o mastro para o seletor abrir |
+| `MastInteractionRadius` | `0.8` | quão longe (m) do eixo do mastro a mira pode passar e ainda contar como "no mastro" |
+| `AdminOnlySails` | _(vazio)_ | ids de velas, separados por vírgula, que só admins do servidor (`adminlist.txt`) podem aplicar |
+| `ServerIconOnDefaultSails` | `true` | carimba o ícone do servidor na vela padrão (vanilla) dos navios sem vela personalizada |
+| `ServerIconSize` | `0.55` | altura do ícone como fração da altura da vela (0.1 a 1) |
 | `SailsRepositoryUrl` | `https://github.com/Deadheim-project/repositorio-das-velas` | repositório das velas customizadas |
 | `EnableRemoteSails` | `true` | busca velas do repositório |
 | `EnableSailCache` | `true` | cacheia manifesto/imagens em disco |
@@ -36,6 +40,14 @@ preferências locais.
 | `EnableClanSails` | `true` | aplica a restrição de clã nas velas que declaram uma |
 | `EnableAutomaticClanSail` | `true` | aplica a vela do clã automaticamente em navios recém-construídos |
 | `DebugMode` | `false` | logs `[Sails] ...` detalhados + habilita os comandos de dev |
+
+A tecla só funciona mirando no **mastro** do navio: o HUD mostra `[G] Trocar vela` quando a
+mira está nele. No convés, no leme ou longe do navio a tecla não faz nada.
+
+Para reservar uma vela a admins, coloque o id dela (veja `dhs_sails_status`) em
+`[Permissions] AdminOnlySails`, por exemplo `AdminOnlySails = generic_skull_banner, clan_deadheim_01`.
+A checagem também roda no dono do navio ao receber o pedido, então um cliente modificado não
+consegue aplicá-la.
 
 Veja [`docs/manifest-format.md`](docs/manifest-format.md) para o formato do
 repositório remoto.
@@ -53,6 +65,7 @@ Todos ficam isolados em `Velas/Debug/` e não afetam o funcionamento normal:
 - `dhs_sail_why <sailId>` — explica se o jogador pode usar a vela e, se não, por quê.
 - `dhs_sail_auto <clã>` — mostra a vela automática configurada para um clã.
 - `dhs_sail_apply <sailId>` — aplica a vela diretamente no navio mais próximo (mesmo caminho de permissão/RPC do seletor, sem abrir a UI).
+- `dhs_sail_inspect` — lista renderers, materiais, texturas e o retângulo de UV da vela do navio mais próximo (diagnóstico de vela desalinhada).
 
 ## Arquitetura
 

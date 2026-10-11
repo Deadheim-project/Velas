@@ -1,4 +1,5 @@
 using Velas.Clans;
+using Velas.Game;
 using Velas.Model;
 
 namespace Velas.Permissions
@@ -7,6 +8,7 @@ namespace Velas.Permissions
     {
         None,
         SailUnknown,
+        AdminOnly,
         WrongClan,
         NoClan,
         ClanSystemUnavailable,
@@ -29,6 +31,7 @@ namespace Velas.Permissions
         {
             SailDenyReason.None => "allowed",
             SailDenyReason.SailUnknown => "sail is not known to this client/server",
+            SailDenyReason.AdminOnly => "sail is reserved for server admins (AdminOnlySails)",
             SailDenyReason.WrongClan => $"sail belongs to clan '{sail?.ClanId}', player is not a member",
             SailDenyReason.NoClan => $"sail belongs to clan '{sail?.ClanId}', player has no clan",
             SailDenyReason.ClanSystemUnavailable => "clan system unavailable, but EnableClanSails is on",
@@ -56,6 +59,10 @@ namespace Velas.Permissions
         public static SailPermissionResult CanUse(SailDefinition sail, long senderId)
         {
             if (sail == null) return new SailPermissionResult(false, SailDenyReason.SailUnknown);
+
+            if (SailConfig.IsAdminOnlySail(sail.Id) && !ValheimApi.IsAdmin(senderId))
+                return new SailPermissionResult(false, SailDenyReason.AdminOnly);
+
             if (sail.IsPublic) return SailPermissionResult.Ok;
 
             if (!SailConfig.EnableClanSails.Value) return SailPermissionResult.Ok;

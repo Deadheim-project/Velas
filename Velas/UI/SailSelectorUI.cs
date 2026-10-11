@@ -192,7 +192,7 @@ namespace Velas.UI
                 current ? SailValheimUi.Yellow : SailValheimUi.Orange, TextAlignmentOptions.Center);
             SailValheimUi.Anchor((RectTransform)name.transform, new Vector2(0f, 1f), new Vector2(1f, 1f),
                 new Vector2(10f, -139f), new Vector2(-10f, -114f));
-            var type = current ? "Em uso" : SailType(sail, permission.Allowed);
+            var type = current ? "Em uso" : SailType(sail, permission);
             var typeLabel = SailValheimUi.Label(card, type, 13,
                 current ? SailValheimUi.Yellow : SailValheimUi.Muted, TextAlignmentOptions.Center);
             SailValheimUi.Anchor((RectTransform)typeLabel.transform, new Vector2(0f, 1f), new Vector2(1f, 1f),
@@ -215,9 +215,11 @@ namespace Velas.UI
             }
         }
 
-        private static string SailType(SailDefinition sail, bool allowed)
+        private static string SailType(SailDefinition sail, SailPermissionResult permission)
         {
-            if (!allowed) return "Bloqueada por clã";
+            if (permission.Reason == SailDenyReason.AdminOnly) return "Exclusiva de adm";
+            if (!permission.Allowed) return "Bloqueada por clã";
+            if (SailConfig.IsAdminOnlySail(sail.Id)) return "Exclusiva de adm";
             if (sail.Source == SailSource.Generic) return "Genérica";
             return sail.IsPublic ? "Personalizada" : $"Clã: {sail.ClanId}";
         }

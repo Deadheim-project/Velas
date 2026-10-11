@@ -3,9 +3,8 @@ using Velas.Ships;
 
 namespace Velas.UI
 {
-    /// <summary>Watches for SailConfig.OpenSailSelectorKey and opens the selector for the
-    /// nearest valid ship -- only does the (cheap, on-keypress-only) ship search when the key
-    /// is actually pressed, never every frame.</summary>
+    /// <summary>Watches for SailConfig.OpenSailSelectorKey and opens the selector for the ship
+    /// whose mast the player is aiming at -- the key does nothing anywhere else.</summary>
     internal class SailInputController : MonoBehaviour
     {
         private SailSelectorUI _ui;
@@ -32,13 +31,12 @@ namespace Velas.UI
                 return;
             }
 
+            // Only reacts while the player aims at a ship's mast (the HUD shows the
+            // "[G] Trocar vela" prompt there). Anywhere else -- the deck, the rudder, open
+            // world -- the key stays silent, so it doesn't clash with other binds on it.
             var player = Player.m_localPlayer;
-            var ship = ShipFinder.FindNearest(player.transform.position, SailConfig.MaxInteractionDistance.Value);
-            if (ship == null)
-            {
-                player.Message(MessageHud.MessageType.Center, "Nenhum navio próximo o suficiente.");
-                return;
-            }
+            var ship = MastTargeting.GetAimedMastShip(player);
+            if (ship == null) return;
 
             var component = ship.GetComponent<ShipSailComponent>();
             if (component == null)

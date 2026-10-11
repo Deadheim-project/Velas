@@ -65,6 +65,41 @@ namespace Velas.Game
             }
         }
 
+        /// <summary>Whether the player behind a routed-RPC sender id (or a character id) is a
+        /// server admin. Works on whichever peer owns the ship: the server checks its
+        /// adminlist directly; a client checks the admin list the server sends to every peer
+        /// (ZNet.m_adminListForRpc, read by ZNet.PlayerIsAdmin).</summary>
+        public static bool IsAdmin(long senderId)
+        {
+            var znet = ZNet.instance;
+            if (znet == null) return false;
+            try
+            {
+                bool isLocal = senderId == 0L || senderId == ZNet.GetUID() ||
+                               (Player.m_localPlayer != null && senderId == Player.m_localPlayer.GetPlayerID());
+                if (isLocal) return znet.LocalPlayerIsAdminOrHost();
+
+                if (znet.IsServer())
+                {
+                    var peer = znet.GetPeer(senderId) ?? FindPeer(senderId);
+                    var host = peer?.m_socket?.GetHostName();
+                    if (!string.IsNullOrEmpty(host) && znet.IsAdmin(host)) return true;
+                }
+
+                foreach (var info in znet.GetPlayerList())
+                {
+                    if (info.m_characterID.UserID != senderId) continue;
+                    var platformId = info.m_userInfo.m_id;
+                    return znet.IsServer() ? znet.IsAdmin(platformId.ToString()) : znet.PlayerIsAdmin(platformId);
+                }
+            }
+            catch (Exception e)
+            {
+                SailLog.Warn($"could not resolve admin status for {senderId}: {e.Message}");
+            }
+            return false;
+        }
+
         /// <summary>Finds the live Player instance behind an RPC sender id, or null if it is
         /// a remote peer whose character is not currently loaded here.</summary>
         public static Player FindOnlinePlayer(long senderId)

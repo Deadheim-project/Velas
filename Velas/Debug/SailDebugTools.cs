@@ -34,7 +34,7 @@ namespace Velas.Debug
                 {
                     args.Context.AddString($"Repositório remoto: {SailManager.RemoteState}");
                     foreach (var s in SailManager.AllSails.OrderBy(s => s.Source).ThenBy(s => s.Id))
-                        args.Context.AddString($"  {s.Id} | {s.DisplayName} | {s.Source} | {(s.IsPublic ? "público" : "clã=" + s.ClanId)}{(s.IsClanDefaultSail ? " [auto]" : "")}");
+                        args.Context.AddString($"  {s.Id} | {s.DisplayName} | {s.Source} | {(s.IsPublic ? "público" : "clã=" + s.ClanId)}{(s.IsClanDefaultSail ? " [auto]" : "")}{(SailConfig.IsAdminOnlySail(s.Id) ? " [adm]" : "")}");
                 }, isCheat: true);
 
             new Terminal.ConsoleCommand("dhs_sails_refresh", "forces a re-fetch of the remote manifest",
@@ -109,7 +109,22 @@ namespace Velas.Debug
                     args.Context.AddString($"Pedido de troca para '{args[1]}' enviado.");
                 }, isCheat: true);
 
-            SailLog.Debug("Dev commands registered (dhs_spawnTestShip, dhs_sails_status, dhs_sails_refresh, dhs_clan_whoami, dhs_clan_simulate, dhs_sail_why, dhs_sail_auto, dhs_sail_apply)");
+            new Terminal.ConsoleCommand("dhs_sail_inspect", "lists the sail renderers/materials/UVs of the nearest ship (diagnoses misaligned sails)",
+                args =>
+                {
+                    var player = Player.m_localPlayer;
+                    if (player == null) { args.Context.AddString("Sem jogador local."); return; }
+                    var ship = ShipFinder.FindNearest(player.transform.position, SailConfig.MaxInteractionDistance.Value + 20f);
+                    if (ship == null) { args.Context.AddString("Nenhum navio próximo."); return; }
+                    foreach (var line in ShipSailController.Describe(ship))
+                    {
+                        args.Context.AddString(line);
+                        SailLog.Info(line);
+                    }
+                    args.Context.AddString($"Mirando no mastro: {(MastTargeting.GetAimedMastShip(player) == ship ? "sim" : "não")}");
+                }, isCheat: true);
+
+            SailLog.Debug("Dev commands registered (dhs_spawnTestShip, dhs_sails_status, dhs_sails_refresh, dhs_clan_whoami, dhs_clan_simulate, dhs_sail_why, dhs_sail_auto, dhs_sail_apply, dhs_sail_inspect)");
         }
     }
 }
