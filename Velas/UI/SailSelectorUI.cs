@@ -34,6 +34,7 @@ namespace Velas.UI
 
         public void Open(Ship ship, ShipSailComponent component)
         {
+            if (SailUiInputBlocker.IsTyping()) return;
             if (ship == null || component == null) return;
             Close();
             _targetShip = ship;

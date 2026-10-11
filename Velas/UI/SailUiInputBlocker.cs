@@ -1,4 +1,8 @@
 using HarmonyLib;
+using TMPro;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace Velas.UI
 {
@@ -8,6 +12,22 @@ namespace Velas.UI
     internal static class SailUiInputBlocker
     {
         public static bool IsOpen;
+
+        public static bool IsTyping()
+        {
+            if ((Chat.instance != null && Chat.instance.HasFocus()) || Console.IsVisible() ||
+                (TextInput.instance != null && TextInput.IsVisible()))
+                return true;
+
+            GameObject selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+            if (!selected) return false;
+
+            InputField input = selected.GetComponentInParent<InputField>();
+            if (input && input.isFocused) return true;
+
+            TMP_InputField tmpInput = selected.GetComponentInParent<TMP_InputField>();
+            return tmpInput && tmpInput.isFocused;
+        }
     }
 
     [HarmonyPatch(typeof(Menu), nameof(Menu.IsVisible))]

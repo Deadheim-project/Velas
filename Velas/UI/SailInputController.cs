@@ -19,6 +19,7 @@ namespace Velas.UI
         {
             if (!SailConfig.Enabled.Value) return;
             if (Player.m_localPlayer == null) return;
+            if (SailUiInputBlocker.IsTyping()) return;
             if (!Input.GetKeyDown(SailConfig.OpenSailSelectorKey.Value)) return;
 
             // Don't let the bind also fire while some other vanilla/mod menu already owns
