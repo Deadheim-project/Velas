@@ -119,6 +119,12 @@ namespace Velas.Ships
                         ? SailUvFitter.Fit(texture, uvRect)
                         : texture;
                     materials[index].mainTexture = applied;
+                    // Some sail materials tile/mirror their own texture (the Ashlands drakkar's
+                    // is scale (-1, 1.27), offset (0, -0.13)); with a clamped custom image a
+                    // negative scale samples only the edge column and the sail turns to
+                    // stripes. The fitted image is laid out on the raw mesh UVs, so reset it.
+                    materials[index].mainTextureScale = Vector2.one;
+                    materials[index].mainTextureOffset = Vector2.zero;
                 }
             }
 
@@ -145,7 +151,13 @@ namespace Velas.Ships
                 if (!SailUvFitter.TryGetUvRect(mesh, submesh, out var uvRect))
                     uvRect = new Rect(0f, 0f, 1f, 1f);
 
-                var branded = SailBranding.Compose(vanilla, uvRect, icon, heightFraction);
+                // The vanilla texture keeps the material's own tiling, so stamp the icon where
+                // that tiling actually samples (mirrored back when the scale is negative).
+                var material = shared[slot.MaterialIndex];
+                uvRect = ApplyTiling(uvRect, material.mainTextureScale, material.mainTextureOffset,
+                    out bool flipX, out bool flipY);
+
+                var branded = SailBranding.Compose(vanilla, uvRect, icon, heightFraction, flipX, flipY);
                 if (branded == null) continue;
                 slot.Renderer.materials[slot.MaterialIndex].mainTexture = branded;
                 painted++;
@@ -212,8 +224,51 @@ namespace Velas.Ships
                 yield return $"  {slot.Renderer.GetType().Name} '{slot.Renderer.name}' slot {slot.MaterialIndex}: " +
                              $"material='{material?.name}' shader='{material?.shader?.name}' " +
                              $"texture='{tex?.name}' {(tex != null ? $"{tex.width}x{tex.height}" : "")} " +
-                             $"mesh='{mesh?.name}' readable={mesh?.isReadable} submeshes={mesh?.subMeshCount} uvRect={uv}";
+                             $"mesh='{mesh?.name}' readable={mesh?.isReadable} submeshes={mesh?.subMeshCount} uvRect={uv} " +
+                             $"centerPixel={SamplePixel(tex)}";
+                if (material == null) continue;
+                foreach (var prop in material.GetTexturePropertyNames())
+                {
+                    var t = material.GetTexture(prop);
+                    yield return $"    tex {prop} = '{t?.name}' {(t != null ? $"{t.width}x{t.height}" : "")}";
+                }
+                yield return $"    keywords: {string.Join(" ", material.shaderKeywords)}";
+                foreach (var prop in new[] { "_Cutoff", "_AlphaCutoff", "_Color", "_Glossiness", "_Metallic" })
+                    if (material.HasProperty(prop))
+                        yield return prop == "_Color"
+                            ? $"    {prop} = {material.GetColor(prop)}"
+                            : $"    {prop} = {material.GetFloat(prop)}";
             }
+        }
+
+        private static string SamplePixel(Texture texture)
+        {
+            if (!(texture is Texture2D tex2d) || !tex2d.isReadable) return "n/a";
+            try
+            {
+                Color32 c = tex2d.GetPixelBilinear(0.5f, 0.5f);
+                return $"rgba({c.r},{c.g},{c.b},{c.a})";
+            }
+            catch (System.Exception)
+            {
+                return "n/a";
+            }
+        }
+
+        /// <summary>Maps a mesh-UV rectangle through a material's _MainTex_ST into texture space,
+        /// folded back into the unit square when it fits inside one tile (Repeat wrap).</summary>
+        private static Rect ApplyTiling(Rect rect, Vector2 scale, Vector2 offset, out bool flipX, out bool flipY)
+        {
+            flipX = scale.x < 0f;
+            flipY = scale.y < 0f;
+            float x0 = rect.xMin * scale.x + offset.x, x1 = rect.xMax * scale.x + offset.x;
+            float y0 = rect.yMin * scale.y + offset.y, y1 = rect.yMax * scale.y + offset.y;
+            var mapped = Rect.MinMaxRect(Mathf.Min(x0, x1), Mathf.Min(y0, y1), Mathf.Max(x0, x1), Mathf.Max(y0, y1));
+
+            float shiftX = Mathf.Floor(mapped.xMin), shiftY = Mathf.Floor(mapped.yMin);
+            if (mapped.xMax - shiftX <= 1.001f) mapped.x -= shiftX;
+            if (mapped.yMax - shiftY <= 1.001f) mapped.y -= shiftY;
+            return mapped;
         }
 
         private static string BaseName(string materialName)

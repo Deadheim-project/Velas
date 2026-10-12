@@ -40,6 +40,18 @@ namespace Velas.UI
         }
     }
 
+    /// <summary>Valheim 1.0's GameCamera.UpdateMouseCapture locks the cursor unless
+    /// Menu.IsActive() (not IsVisible) is true, so both have to report the selector.</summary>
+    [HarmonyPatch(typeof(Menu), nameof(Menu.IsActive))]
+    internal static class Menu_IsActive_SailPatch
+    {
+        [HarmonyPostfix]
+        private static void Postfix(ref bool __result)
+        {
+            if (SailUiInputBlocker.IsOpen) __result = true;
+        }
+    }
+
     [HarmonyPatch(typeof(PlayerController), nameof(PlayerController.TakeInput))]
     internal static class PlayerController_TakeInput_SailPatch
     {

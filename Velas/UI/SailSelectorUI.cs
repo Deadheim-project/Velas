@@ -65,6 +65,10 @@ namespace Velas.UI
         private void Update()
         {
             if (!_open) return;
+            // With Menu.IsVisible forced true, GameCamera skips its own "show cursor" branch,
+            // so the selector frees the cursor itself every frame it is open.
+            ZCursor.LockState = CursorLockMode.None;
+            ZCursor.Show();
             if (_canvas == null) TryBuildWindow();
             if (Input.GetKeyDown(KeyCode.Escape))
             {

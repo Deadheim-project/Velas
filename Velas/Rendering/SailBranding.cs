@@ -24,12 +24,13 @@ namespace Velas.Rendering
         /// on top of an already-branded material.</summary>
         public static bool IsBranded(Texture texture) => texture != null && Produced.Contains(texture);
 
-        public static Texture2D Compose(Texture vanilla, Rect uvRect, Texture2D icon, float iconHeightFraction)
+        public static Texture2D Compose(Texture vanilla, Rect uvRect, Texture2D icon, float iconHeightFraction,
+            bool flipX = false, bool flipY = false)
         {
             if (vanilla == null || icon == null) return null;
 
             string key = $"{vanilla.GetInstanceID()}|{icon.GetInstanceID()}|{iconHeightFraction:F2}|" +
-                         $"{uvRect.xMin:F3}|{uvRect.yMin:F3}|{uvRect.xMax:F3}|{uvRect.yMax:F3}";
+                         $"{uvRect.xMin:F3}|{uvRect.yMin:F3}|{uvRect.xMax:F3}|{uvRect.yMax:F3}|{flipX}|{flipY}";
             if (Composites.TryGetValue(key, out var cached) && cached != null) return cached;
 
             float shrink = Mathf.Min(1f, (float)MaxSize / Mathf.Max(vanilla.width, vanilla.height));
@@ -61,7 +62,7 @@ namespace Velas.Rendering
                 RenderTexture.ReleaseTemporary(rt);
             }
 
-            Stamp(result, uvRect, icon, iconHeightFraction);
+            Stamp(result, uvRect, icon, iconHeightFraction, flipX, flipY);
             result.Apply(true, true); // drop the CPU copy: nothing reads it again
 
             Composites[key] = result;
@@ -70,7 +71,7 @@ namespace Velas.Rendering
             return result;
         }
 
-        private static void Stamp(Texture2D target, Rect uvRect, Texture2D icon, float heightFraction)
+        private static void Stamp(Texture2D target, Rect uvRect, Texture2D icon, float heightFraction, bool flipX, bool flipY)
         {
             int w = target.width, h = target.height;
             float rectW = uvRect.width * w, rectH = uvRect.height * h;
@@ -101,7 +102,7 @@ namespace Velas.Rendering
                 {
                     float u = (x0 + x + 0.5f - left) / iconW;
                     if (u < 0f || u > 1f) continue;
-                    var src = icon.GetPixelBilinear(u, v);
+                    var src = icon.GetPixelBilinear(flipX ? 1f - u : u, flipY ? 1f - v : v);
                     if (src.a <= 0.003f) continue;
                     int i = y * bw + x;
                     var dst = pixels[i];

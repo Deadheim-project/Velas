@@ -75,23 +75,36 @@ namespace Velas.Rendering
             int width = Mathf.Clamp(Mathf.RoundToInt(image.width / uvRect.width), 4, MaxFittedSize);
             int height = Mathf.Clamp(Mathf.RoundToInt(image.height / uvRect.height), 4, MaxFittedSize);
 
-            var scale = new Vector2(1f / uvRect.width, 1f / uvRect.height);
-            var offset = new Vector2(-uvRect.xMin / uvRect.width, -uvRect.yMin / uvRect.height);
+            if (!image.isReadable)
+            {
+                SailLog.Warn($"'{image.name}' is not CPU-readable, applying it unscaled");
+                return image;
+            }
 
-            var rt = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
-            var previous = RenderTexture.active;
             try
             {
-                // Outside the sail's rectangle the Clamp wrap mode smears the image's edge
-                // pixels, which is harmless: the mesh never samples there.
-                Graphics.Blit(image, rt, scale, offset);
-                RenderTexture.active = rt;
+                // Done on the CPU: the GPU path (Graphics.Blit into a RenderTexture, then
+                // ReadPixels) came back blank under Valheim 1.0's renderer and the sail showed
+                // only the shader's sky reflection. Sail images are small, so this is cheap.
+                // Outside the sail's rectangle the coordinates are clamped, smearing the
+                // image's edge pixels -- harmless, the mesh never samples there.
+                var pixels = new Color32[width * height];
+                for (int y = 0; y < height; y++)
+                {
+                    float v = Mathf.Clamp01((((y + 0.5f) / height) - uvRect.yMin) / uvRect.height);
+                    for (int x = 0; x < width; x++)
+                    {
+                        float u = Mathf.Clamp01((((x + 0.5f) / width) - uvRect.xMin) / uvRect.width);
+                        pixels[y * width + x] = image.GetPixelBilinear(u, v);
+                    }
+                }
+
                 var fitted = new Texture2D(width, height, TextureFormat.RGBA32, true)
                 {
                     name = image.name + "_fitted",
                     wrapMode = TextureWrapMode.Clamp,
                 };
-                fitted.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+                fitted.SetPixels32(pixels);
                 fitted.Apply(true, false);
 
                 Fitted[key] = fitted;
@@ -103,11 +116,6 @@ namespace Velas.Rendering
             {
                 SailLog.Warn($"could not fit '{image.name}' to the sail UVs, applying it unscaled: {e.Message}");
                 return image;
-            }
-            finally
-            {
-                RenderTexture.active = previous;
-                RenderTexture.ReleaseTemporary(rt);
             }
         }
 
