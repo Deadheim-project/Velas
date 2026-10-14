@@ -64,14 +64,16 @@ então um cliente modificado não ganha a vela de VIP sem estar na lista.
 
 ### Vela liberada por jogador (pacote de Halloween, passe de temporada)
 
-Uma entrada do manifesto pode trazer `"requiresCosmetic": "<id>"`: só quem tiver aquele
-cosmético desbloqueado no registro do Deadheim pode escolher a vela, mesmo sendo pública ou de
-clã. A ligação com o registro de cosméticos do Deadheim (ver o plano, seção "Base comum") ainda
-não está pronta: enquanto `Integration/CosmeticUnlockProvider.cs` não apontar para a API real
-(ela ainda não tinha nome anotado no plano em 14/10/2026), toda vela com `requiresCosmetic`
-fica bloqueada para todo mundo -- é a falha segura, não um bug. Quando a sessão do Deadheim
-anotar o nome da API no plano, atualize as três constantes no topo daquele arquivo; o resto
-(checagem, mensagem no seletor, `dhs_sail_why`) já está pronto.
+Uma entrada do manifesto pode trazer `"requiresCosmetic": "<chave>"`: só quem tiver aquela
+chave desbloqueada no registro de cosméticos do Deadheim pode escolher a vela, mesmo sendo
+pública ou de clã. A chave é o texto livre `"categoria:nome"` que o Deadheim usa (ex.:
+`"titulo:fundador"`; a de Halloween/temporada ainda não existe -- a sessão do Deadheim cria uma
+nova quando o conteúdo ficar pronto). A ligação (`Integration/CosmeticUnlockProvider.cs`) já
+fala por reflexão com `Deadheim.CosmeticosApi` (`Has`/`LocalHas`, confirmado em 14/10/2026 pela
+sessão do Deadheim), sem referência em tempo de compilação -- mesmo padrão do
+`GuildsClanProvider` e do `VipProvider`. Enquanto a chave que uma vela exige ainda não existir
+no registro (ninguém a desbloqueou), a vela continua bloqueada para todo mundo normalmente --
+não é bug.
 
 ### Vela/brasão de guilda sob encomenda
 

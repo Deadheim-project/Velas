@@ -1,60 +1,71 @@
 using System;
 using System.Linq;
 using System.Reflection;
+using Velas.Game;
 
 namespace Velas.Integration
 {
     /// <summary>
-    /// Single connection point to the Deadheim per-character cosmetic registry described in
-    /// the shared plan (side-session-notes/.../plano-implementacao.md, section "Base comum"):
-    /// one registry of cosmetics unlocked per character, kept on the server -- titles today,
-    /// sails among the things it grows into later. The pacote de Halloween (vela "Abóbora")
-    /// and the passe de temporada are expected to unlock sails through it.
+    /// Connection point to the Deadheim per-character cosmetic registry (shared plan, section
+    /// "Base comum" -- confirmed 14/10/2026 by the Deadheim session: Deadheim.CosmeticosApi,
+    /// Version 1, same reflection scheme as Pvp/PvpApi and TreinadorApi). Resolved entirely
+    /// through reflection, no compile-time reference to Deadheim.dll -- same pattern as
+    /// Clans/GuildsClanProvider.cs and VipProvider.cs.
     ///
-    /// As of 2026-10-14 the Deadheim session had not yet published that API's assembly/type/
-    /// method names in the plan, so this cannot be wired for real without guessing names that
-    /// may not match (the task asked not to invent that API). THIS is the one place to edit
-    /// once it is named: fill in ApiTypeName below (and MethodName/AssemblyName if those also
-    /// differ) following the same reflection pattern Velas already uses for Guilds
-    /// (Clans/GuildsClanProvider.cs) and VipList (VipProvider.cs) -- no compile-time
-    /// reference to Deadheim.dll.
+    /// Server/API shape: Grant(long playerId, string key) and Has(long playerId, string key)
+    /// are server-authoritative, backed by a per-world file only the server (or whoever hosts
+    /// it) ever loads; LocalHas(string key)/LocalKeys() answer for the local player's own
+    /// synced copy and work correctly on any client. SailPermissionService.CanUse passes the
+    /// same character/player id already used for admin/VIP checks, so the only case that
+    /// behaves differently here is: a ship whose ZDO owner is a non-host client checking a
+    /// *remote* player's cosmetic via Has() can get a false "not unlocked" (the owning
+    /// client's own file has no entry for someone else) -- same class of limitation as
+    /// ValheimApi.IsAdmin's non-server branch. There is no broadcast of granted keys (unlike
+    /// VipList's ServerSync'd list), so this cannot be fixed purely on the Velas side; fine for
+    /// now since fail-closed on a false negative only means the sail stays locked a bit longer,
+    /// never that it leaks open.
     ///
-    /// Fails closed: while unresolved (or if the registry answers with anything but a clean
-    /// "yes"), every cosmetic-gated sail stays locked for everyone. A sail nobody can prove
-    /// they unlocked must never silently become public just because the wiring is missing.
+    /// Still fails closed if the assembly/type/methods ever go missing or change shape again:
+    /// every cosmetic-gated sail stays locked for everyone rather than becoming public.
     /// </summary>
     internal static class CosmeticUnlockProvider
     {
-        // TODO(sessão Velas, onda 1/2): atualizar quando o plano anotar o nome real.
-        // Assinatura esperada (ajuste MethodName/parametros se a API publicada for diferente):
-        //   static bool <MethodName>(long characterId, string cosmeticId)
         private const string AssemblyName = "Deadheim";
-        private const string ApiTypeName = ""; // ainda não definido pela sessão do Deadheim (14/10)
-        private const string MethodName = "IsUnlocked";
+        private const string ApiTypeName = "Deadheim.CosmeticosApi";
 
         private static readonly BindingFlags AnyStatic = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
 
         private static bool _resolved;
-        private static MethodInfo _isUnlocked;
+        private static MethodInfo _has;      // static bool Has(long playerId, string key)
+        private static MethodInfo _localHas; // static bool LocalHas(string key)
 
         /// <summary>Whether the registry API was found and bound. False means every
         /// cosmetic-gated sail is locked for everyone (fail closed) -- see the class doc.</summary>
         public static bool IsAvailable
         {
-            get { Resolve(); return _isUnlocked != null; }
+            get { Resolve(); return _has != null; }
         }
 
         /// <summary>Whether <paramref name="characterId"/> (the same character/player id
         /// SailPermissionService already uses for admin/VIP checks) has unlocked the cosmetic
-        /// named <paramref name="cosmeticId"/> (e.g. "halloween_abobora_2026").</summary>
+        /// named <paramref name="cosmeticId"/> (e.g. "titulo:fundador", "sail:halloween_abobora" --
+        /// format is the free "categoria:nome" text the Deadheim session documented).
+        ///
+        /// For the local player, prefers LocalHas (always accurate, synced copy) over Has
+        /// (server-authoritative, but only reliable when this process is the host) -- see the
+        /// class doc for why.</summary>
         public static bool IsUnlocked(long characterId, string cosmeticId)
         {
             Resolve();
-            if (_isUnlocked == null || string.IsNullOrEmpty(cosmeticId)) return false;
+            if (string.IsNullOrEmpty(cosmeticId)) return false;
 
             try
             {
-                return _isUnlocked.Invoke(null, new object[] { characterId, cosmeticId }) is true;
+                if (ValheimApi.IsLocalSender(characterId) && _localHas != null)
+                    return _localHas.Invoke(null, new object[] { cosmeticId }) is true;
+
+                if (_has == null) return false;
+                return _has.Invoke(null, new object[] { characterId, cosmeticId }) is true;
             }
             catch (Exception e)
             {
@@ -67,12 +78,6 @@ namespace Velas.Integration
         {
             if (_resolved) return;
             _resolved = true;
-
-            if (string.IsNullOrEmpty(ApiTypeName))
-            {
-                SailLog.Info("Cosmetic registry API ainda não anotada no plano -- velas que exigem cosmético ficam bloqueadas para todos até isso ser ligado (ver Integration/CosmeticUnlockProvider.cs).");
-                return;
-            }
 
             try
             {
@@ -91,10 +96,15 @@ namespace Velas.Integration
                     return;
                 }
 
-                _isUnlocked = apiType.GetMethods(AnyStatic)
-                    .FirstOrDefault(m => m.Name == MethodName && m.GetParameters().Length == 2);
+                _has = apiType.GetMethods(AnyStatic)
+                    .FirstOrDefault(m => m.Name == "Has" && m.GetParameters().Length == 2
+                                          && m.GetParameters()[0].ParameterType == typeof(long)
+                                          && m.GetParameters()[1].ParameterType == typeof(string));
+                _localHas = apiType.GetMethods(AnyStatic)
+                    .FirstOrDefault(m => m.Name == "LocalHas" && m.GetParameters().Length == 1
+                                          && m.GetParameters()[0].ParameterType == typeof(string));
 
-                SailLog.Info($"Cosmetic registry integration ready (IsUnlocked={_isUnlocked != null})");
+                SailLog.Info($"Cosmetic registry integration ready (Has={_has != null}, LocalHas={_localHas != null})");
             }
             catch (Exception e)
             {
