@@ -22,6 +22,7 @@ namespace Velas
         public static ConfigEntry<float> MaxInteractionDistance;
         public static ConfigEntry<float> MastInteractionRadius;
         public static ConfigEntry<string> AdminOnlySails;
+        public static ConfigEntry<string> VipOnlySails;
         public static ConfigEntry<bool> ServerIconOnDefaultSails;
         public static ConfigEntry<float> ServerIconSize;
         public static ConfigEntry<int> ManifestTimeoutSeconds;
@@ -82,6 +83,9 @@ namespace Velas
             AdminOnlySails = BindSynced(config, configSync, "Permissions", "AdminOnlySails", "",
                 "Comma-separated sail ids (as listed by dhs_sails_status, e.g. generic_skull_banner, clan_deadheim_01) that only server admins (adminlist.txt) can apply. Other players see them locked.");
 
+            VipOnlySails = BindSynced(config, configSync, "Permissions", "VipOnlySails", "",
+                "Comma-separated sail ids (as listed by dhs_sails_status) that only VIPs (VipList, see VipListApi.IsLocalPlayerVip) can apply. Server admins can always apply them too, VIP or not. Other players see them locked. (Aesir 27)");
+
             ServerIconOnDefaultSails = BindSynced(config, configSync, "Branding", "ServerIconOnDefaultSails", true,
                 "Stamp the server icon on the vanilla sail of ships that have no custom sail chosen.");
 
@@ -94,12 +98,18 @@ namespace Velas
 
         /// <summary>Whether <paramref name="sailId"/> is listed in AdminOnlySails. Parsed on
         /// every call so a live cfg reload or a ServerSync update applies immediately.</summary>
-        public static bool IsAdminOnlySail(string sailId)
+        public static bool IsAdminOnlySail(string sailId) => IsListed(AdminOnlySails, sailId);
+
+        /// <summary>Whether <paramref name="sailId"/> is listed in VipOnlySails. Parsed on
+        /// every call for the same live-reload reason as IsAdminOnlySail.</summary>
+        public static bool IsVipOnlySail(string sailId) => IsListed(VipOnlySails, sailId);
+
+        private static bool IsListed(ConfigEntry<string> entry, string sailId)
         {
-            var list = AdminOnlySails?.Value;
+            var list = entry?.Value;
             if (string.IsNullOrWhiteSpace(list) || string.IsNullOrEmpty(sailId)) return false;
-            foreach (var entry in list.Split(',', ';'))
-                if (string.Equals(entry.Trim(), sailId, System.StringComparison.OrdinalIgnoreCase))
+            foreach (var item in list.Split(',', ';'))
+                if (string.Equals(item.Trim(), sailId, System.StringComparison.OrdinalIgnoreCase))
                     return true;
             return false;
         }

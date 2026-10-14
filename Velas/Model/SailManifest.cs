@@ -20,6 +20,8 @@ namespace Velas.Model
         public string clan;
         [DataMember(Name = "clanDefault")]
         public bool clanDefault;
+        [DataMember(Name = "requiresCosmetic")]
+        public string requiresCosmetic;
         [DataMember(Name = "sha256")]
         public string sha256;
     }

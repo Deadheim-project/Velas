@@ -31,6 +31,7 @@ preferências locais.
 | `MaxInteractionDistance` | `10` | distância máxima (m) do jogador até o mastro para o seletor abrir |
 | `MastInteractionRadius` | `0.8` | quão longe (m) do eixo do mastro a mira pode passar e ainda contar como "no mastro" |
 | `AdminOnlySails` | _(vazio)_ | ids de velas, separados por vírgula, que só admins do servidor (`adminlist.txt`) podem aplicar |
+| `VipOnlySails` | _(vazio)_ | ids de velas, separados por vírgula, que só VIPs (lista do `VipList`) podem aplicar; admins também podem (Aesir 27) |
 | `ServerIconOnDefaultSails` | `true` | carimba o ícone do servidor na vela padrão (vanilla) dos navios sem vela personalizada |
 | `ServerIconSize` | `0.55` | altura do ícone como fração da altura da vela (0.1 a 1) |
 | `SailsRepositoryUrl` | `https://github.com/Deadheim-project/repositorio-das-velas` | repositório das velas customizadas |
@@ -48,6 +49,51 @@ Para reservar uma vela a admins, coloque o id dela (veja `dhs_sails_status`) em
 `[Permissions] AdminOnlySails`, por exemplo `AdminOnlySails = generic_skull_banner, clan_deadheim_01`.
 A checagem também roda no dono do navio ao receber o pedido, então um cliente modificado não
 consegue aplicá-la.
+
+### Vela só para VIP (Aesir 27)
+
+`[Permissions] VipOnlySails` funciona como o `AdminOnlySails` acima, mas a lista de quem pode
+usar é a do VIP (`VipList`, servidor por id de plataforma; cliente por
+`VipListApi.IsLocalPlayerVip()`) em vez da `adminlist.txt`. Admins do servidor também podem
+aplicar essas velas, VIP ou não -- mesma regra do `AdminOnlySails`. O Velas não referencia o
+`VipList.dll` em tempo de compilação: a ligação é por reflexão (`Integration/VipProvider.cs`,
+mesmo padrão do `GuildsClanProvider`), então o mod continua funcionando (negando a todos, exceto
+admins) se o `VipList` não estiver instalado. Como toda vela que dá alguma vantagem a quem
+paga, a checagem definitiva roda no dono do navio ao receber o pedido (não no cliente que pede),
+então um cliente modificado não ganha a vela de VIP sem estar na lista.
+
+### Vela liberada por jogador (pacote de Halloween, passe de temporada)
+
+Uma entrada do manifesto pode trazer `"requiresCosmetic": "<id>"`: só quem tiver aquele
+cosmético desbloqueado no registro do Deadheim pode escolher a vela, mesmo sendo pública ou de
+clã. A ligação com o registro de cosméticos do Deadheim (ver o plano, seção "Base comum") ainda
+não está pronta: enquanto `Integration/CosmeticUnlockProvider.cs` não apontar para a API real
+(ela ainda não tinha nome anotado no plano em 14/10/2026), toda vela com `requiresCosmetic`
+fica bloqueada para todo mundo -- é a falha segura, não um bug. Quando a sessão do Deadheim
+anotar o nome da API no plano, atualize as três constantes no topo daquele arquivo; o resto
+(checagem, mensagem no seletor, `dhs_sail_why`) já está pronto.
+
+### Vela/brasão de guilda sob encomenda
+
+Serviço manual, sem automação: o jogador compra a `FichaBrasao` (Loja Deadcoins) e negocia a
+arte com um admin. Quando a imagem estiver pronta, o admin:
+
+1. Confirma o nome exato da guilda com o jogador (é o nome que o mod Guilds usa; peça para o
+   jogador rodar `dhs_clan_whoami` no servidor estando no clã -- a checagem é
+   case-insensitive, mas evite espaços/acentos diferentes do nome real).
+2. Prepara o PNG da vela respeitando os limites em
+   [`docs/manifest-format.md`](docs/manifest-format.md) (tamanho, dimensão, formato) e sobe o
+   arquivo em `sails/` no repositório `repositorio-das-velas` (branch `main`).
+3. Acrescenta a entrada em `manifest.json`: `id` novo e definitivo (nunca reaproveite nem
+   renomeie depois -- veja o aviso no formato do manifesto), `name`, `file`, e `clan` com o
+   nome exato do passo 1. `clanDefault: true` é opcional, só se a vela também deve ser aplicada
+   automaticamente a todo navio novo construído por um membro daquela guilda.
+4. Faz commit e push do `manifest.json` e da imagem. Quem já tiver o jogo aberto vê a vela nova
+   depois do próximo `CacheRefreshMinutes` (padrão 30 min) ou ao reentrar no servidor.
+5. A restrição por clã (`clan` no manifesto) já existe desde antes desta onda --
+   `Clans/GuildsClanProvider.cs` fala com o mod Guilds por reflexão e
+   `SailPermissionService` nega a vela a quem não é daquele clã, checado no dono do navio, não
+   no cliente que pede. Nada precisou mudar no código para isso: só o passo a passo acima.
 
 Veja [`docs/manifest-format.md`](docs/manifest-format.md) para o formato do
 repositório remoto.

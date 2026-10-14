@@ -34,7 +34,7 @@ namespace Velas.Debug
                 {
                     args.Context.AddString($"Repositório remoto: {SailManager.RemoteState}");
                     foreach (var s in SailManager.AllSails.OrderBy(s => s.Source).ThenBy(s => s.Id))
-                        args.Context.AddString($"  {s.Id} | {s.DisplayName} | {s.Source} | {(s.IsPublic ? "público" : "clã=" + s.ClanId)}{(s.IsClanDefaultSail ? " [auto]" : "")}{(SailConfig.IsAdminOnlySail(s.Id) ? " [adm]" : "")}");
+                        args.Context.AddString($"  {s.Id} | {s.DisplayName} | {s.Source} | {(s.IsPublic ? "público" : "clã=" + s.ClanId)}{(s.IsClanDefaultSail ? " [auto]" : "")}{(SailConfig.IsAdminOnlySail(s.Id) ? " [adm]" : "")}{(SailConfig.IsVipOnlySail(s.Id) ? " [vip]" : "")}{(string.IsNullOrEmpty(s.RequiresCosmetic) ? "" : $" [cosmetico={s.RequiresCosmetic}]")}");
                 }, isCheat: true);
 
             new Terminal.ConsoleCommand("dhs_sails_refresh", "forces a re-fetch of the remote manifest",

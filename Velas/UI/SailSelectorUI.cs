@@ -222,8 +222,11 @@ namespace Velas.UI
         private static string SailType(SailDefinition sail, SailPermissionResult permission)
         {
             if (permission.Reason == SailDenyReason.AdminOnly) return "Exclusiva de adm";
+            if (permission.Reason == SailDenyReason.VipOnly) return "Exclusiva de VIP";
+            if (permission.Reason == SailDenyReason.CosmeticRequired) return "Liberada por evento";
             if (!permission.Allowed) return "Bloqueada por clã";
             if (SailConfig.IsAdminOnlySail(sail.Id)) return "Exclusiva de adm";
+            if (SailConfig.IsVipOnlySail(sail.Id)) return "Exclusiva de VIP";
             if (sail.Source == SailSource.Generic) return "Genérica";
             return sail.IsPublic ? "Personalizada" : $"Clã: {sail.ClanId}";
         }

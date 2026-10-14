@@ -214,6 +214,7 @@ namespace Velas.Manager
                     Source = Model.SailSource.Remote,
                     ClanId = entry.clan,
                     IsClanDefaultSail = entry.clanDefault,
+                    RequiresCosmetic = entry.requiresCosmetic,
                     ImageFile = entry.file,
                     Sha256 = entry.sha256,
                 };

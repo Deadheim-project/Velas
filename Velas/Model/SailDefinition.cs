@@ -24,6 +24,13 @@ namespace Velas.Model
         /// picks the first match if more than one is (see SailManager.GetAutomaticClanSail).</summary>
         public bool IsClanDefaultSail;
 
+        /// <summary>Null/empty = no requirement. Otherwise the id of a cosmetic that must be
+        /// unlocked on the requesting character (see
+        /// <see cref="Velas.Integration.CosmeticUnlockProvider"/>) -- used by sails granted to
+        /// a specific player rather than to everyone or to a clan, e.g. the Halloween package's
+        /// "Abóbora" sail or a season-pass reward.</summary>
+        public string RequiresCosmetic;
+
         /// <summary>For remote sails: relative file path inside the repository (from the
         /// manifest). For generic sails: the file name under Assets/GenericSails.</summary>
         public string ImageFile;

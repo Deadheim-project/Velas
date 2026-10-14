@@ -1,5 +1,6 @@
 using Velas.Clans;
 using Velas.Game;
+using Velas.Integration;
 using Velas.Model;
 
 namespace Velas.Permissions
@@ -9,6 +10,8 @@ namespace Velas.Permissions
         None,
         SailUnknown,
         AdminOnly,
+        VipOnly,
+        CosmeticRequired,
         WrongClan,
         NoClan,
         ClanSystemUnavailable,
@@ -32,6 +35,8 @@ namespace Velas.Permissions
             SailDenyReason.None => "allowed",
             SailDenyReason.SailUnknown => "sail is not known to this client/server",
             SailDenyReason.AdminOnly => "sail is reserved for server admins (AdminOnlySails)",
+            SailDenyReason.VipOnly => "sail is reserved for VIPs (VipOnlySails)",
+            SailDenyReason.CosmeticRequired => $"sail requires the unlocked cosmetic '{sail?.RequiresCosmetic}'",
             SailDenyReason.WrongClan => $"sail belongs to clan '{sail?.ClanId}', player is not a member",
             SailDenyReason.NoClan => $"sail belongs to clan '{sail?.ClanId}', player has no clan",
             SailDenyReason.ClanSystemUnavailable => "clan system unavailable, but EnableClanSails is on",
@@ -60,8 +65,21 @@ namespace Velas.Permissions
         {
             if (sail == null) return new SailPermissionResult(false, SailDenyReason.SailUnknown);
 
-            if (SailConfig.IsAdminOnlySail(sail.Id) && !ValheimApi.IsAdmin(senderId))
+            bool isAdmin = ValheimApi.IsAdmin(senderId);
+
+            if (SailConfig.IsAdminOnlySail(sail.Id) && !isAdmin)
                 return new SailPermissionResult(false, SailDenyReason.AdminOnly);
+
+            // Admins can always apply a VIP-only sail too (Aesir 27): matches AdminOnlySails'
+            // own rule and lets staff test/showcase VIP sails without being on the VIP list.
+            if (SailConfig.IsVipOnlySail(sail.Id) && !isAdmin && !VipProvider.IsVip(senderId))
+                return new SailPermissionResult(false, SailDenyReason.VipOnly);
+
+            // Cosmetic-gated sails (Halloween/season rewards) are per-character unlocks, not
+            // an admin perk -- an admin does not automatically own the cosmetic either.
+            if (!string.IsNullOrEmpty(sail.RequiresCosmetic) &&
+                !CosmeticUnlockProvider.IsUnlocked(senderId, sail.RequiresCosmetic))
+                return new SailPermissionResult(false, SailDenyReason.CosmeticRequired);
 
             if (sail.IsPublic) return SailPermissionResult.Ok;
 

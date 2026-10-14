@@ -65,6 +65,47 @@ namespace Velas.Game
             }
         }
 
+        /// <summary>Whether a sender id refers to this process' own player/host rather than a
+        /// remote peer -- shared by IsAdmin and VipProvider so both agree on what "local"
+        /// means (RPC id, character id, or ZNet.GetUID() all count).</summary>
+        public static bool IsLocalSender(long senderId) =>
+            senderId == 0L || senderId == ZNet.GetUID() || senderId == LocalRpcSenderId() ||
+            (Player.m_localPlayer != null && senderId == Player.m_localPlayer.GetPlayerID());
+
+        /// <summary>This process' own routed-RPC id (ZRoutedRpc.m_id). Needed to recognize a
+        /// request the local/host player made, the same way ValheimApi.IsAdmin already
+        /// recognizes local senders.</summary>
+        public static long LocalRpcSenderId()
+        {
+            try
+            {
+                return ZRoutedRpc.instance != null ? ZRoutedRpc.instance.m_id : 0L;
+            }
+            catch (Exception e)
+            {
+                SailLog.Warn($"could not read local RPC id: {e.Message}");
+                return 0L;
+            }
+        }
+
+        /// <summary>The stable platform account id (Steam/Xbox/etc., as used by VipList)
+        /// behind a remote RPC sender id. Null for a local sender -- callers that need the
+        /// local player's platform id should ask the platform directly (see VipProvider),
+        /// since there is no peer/socket for our own connection.</summary>
+        public static string GetPlatformUserId(long senderId)
+        {
+            try
+            {
+                var peer = ZNet.instance?.GetPeer(senderId) ?? FindPeer(senderId);
+                return peer?.m_socket?.GetHostName();
+            }
+            catch (Exception e)
+            {
+                SailLog.Warn($"could not resolve platform id for sender {senderId}: {e.Message}");
+                return null;
+            }
+        }
+
         /// <summary>Whether the player behind a routed-RPC sender id (or a character id) is a
         /// server admin. Works on whichever peer owns the ship: the server checks its
         /// adminlist directly; a client checks the admin list the server sends to every peer
